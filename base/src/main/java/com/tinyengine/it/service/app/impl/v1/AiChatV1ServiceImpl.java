@@ -33,6 +33,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.Inet6Address;
@@ -357,8 +358,8 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
 
                 log.info("errorBody: {}", errorBody);
 
-                JsonNode errorNode = JsonUtils.MAPPER.readTree(errorBody);
-                throw new ServiceException(String.valueOf(response.statusCode()), errorNode.get("error").get("message").asText());
+                writeStreamError(outputStream, response.statusCode(), extractErrorMessage(errorBody));
+                return;
             }
 
             // 正常流处理逻辑
@@ -371,6 +372,43 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
                 }
             }
         };
+    }
+
+    private void writeStreamError(OutputStream outputStream, int statusCode, String message) throws IOException {
+        Map<String, Object> errorChunk = Map.of(
+            "id", "error",
+            "object", "chat.completion.chunk",
+            "choices", List.of(Map.of(
+                "index", 0,
+                "delta", Map.of("content", "AI service error: " + message),
+                "finish_reason", "error"
+            )),
+            "error", Map.of(
+                "code", String.valueOf(statusCode),
+                "message", message
+            )
+        );
+        outputStream.write(("data: " + JsonUtils.encode(errorChunk) + "\n\n").getBytes(StandardCharsets.UTF_8));
+        outputStream.write("data: [DONE]\n\n".getBytes(StandardCharsets.UTF_8));
+        outputStream.flush();
+    }
+
+    private String extractErrorMessage(String errorBody) {
+        try {
+            JsonNode errorNode = JsonUtils.MAPPER.readTree(errorBody);
+            JsonNode messageNode = errorNode.path("error").path("message");
+            if (!messageNode.isMissingNode() && !messageNode.isNull()) {
+                return messageNode.asText();
+            }
+            JsonNode message = errorNode.path("message");
+            if (!message.isMissingNode() && !message.isNull()) {
+                return message.asText();
+            }
+        } catch (IOException e) {
+            log.warn("Failed to parse AI error body: {}", errorBody, e);
+        }
+
+        return StringUtils.hasText(errorBody) ? errorBody : "Unknown AI service error";
     }
 
     private static final Set<String> LOOPBACK_HOSTS = Set.of("localhost", "127.0.0.1", "::1", "[::1]");
