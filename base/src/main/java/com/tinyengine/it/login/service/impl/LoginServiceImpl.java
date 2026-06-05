@@ -67,11 +67,29 @@ public class LoginServiceImpl extends ServiceImpl<UserMapper, User> implements L
         String cipherText = encrypt(user.getSalt(), publicKey);
         String publicKeyBase64 = Base64.getEncoder().encodeToString(publicKey.getEncoded());
         String privateKeyBase64 = Base64.getEncoder().encodeToString(privateKey.getEncoded());
+        if (user.getEmail() == null) {
+            user.setEmail("");
+        }
         user.setSalt(cipherText);
         user.setPublicKey(publicKeyBase64);
         user.setPrivateKey(privateKeyBase64);
         baseMapper.createUser(user);
-        User result = baseMapper.queryUserById(user.getId());
+
+        String userId = user.getId();
+        if (userId == null || userId.isEmpty()) {
+            User userQuery = new User();
+            userQuery.setUsername(user.getUsername());
+            List<User> insertedUsers = baseMapper.queryUserByCondition(userQuery);
+            if (insertedUsers == null || insertedUsers.isEmpty()) {
+                throw new ServiceException(ExceptionEnum.CM001.getResultCode(), "注册失败：未能获取新增用户信息");
+            }
+            userId = insertedUsers.get(0).getId();
+        }
+
+        User result = baseMapper.queryUserById(userId);
+        if (result == null) {
+            throw new ServiceException(ExceptionEnum.CM001.getResultCode(), "注册失败：新增用户信息不存在");
+        }
         result.setPrivateKey(null);
 
         AuthUsersUnitsRoles authUsersUnitsRoles = new AuthUsersUnitsRoles();
@@ -79,9 +97,13 @@ public class LoginServiceImpl extends ServiceImpl<UserMapper, User> implements L
         authUsersUnitsRoles.setRoleId(2);
         authUsersUnitsRoles.setUnitType("tenant");
         authUsersUnitsRoles.setUnitId(1);
-        authUsersUnitsRoles.setUserId(Integer.valueOf(user.getId()));
-        authUsersUnitsRoles.setCreatedBy(user.getId());
-        authUsersUnitsRoles.setLastUpdatedBy(user.getId());
+        try {
+            authUsersUnitsRoles.setUserId(Integer.valueOf(userId));
+        } catch (NumberFormatException e) {
+            throw new ServiceException(ExceptionEnum.CM001.getResultCode(), "注册失败：用户ID格式错误");
+        }
+        authUsersUnitsRoles.setCreatedBy(userId);
+        authUsersUnitsRoles.setLastUpdatedBy(userId);
         authUsersUnitsRolesMapper.createAuthUsersUnitsRoles(authUsersUnitsRoles);
         return result;
     }

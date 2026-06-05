@@ -42,7 +42,6 @@ public class SSOInterceptor implements HandlerInterceptor {
 	@Override
 	public boolean preHandle(HttpServletRequest request,
 	                         HttpServletResponse response, Object handler) throws Exception {
-
 		String authorization = request.getHeader("Authorization");
 		String org = request.getHeader("X-Lowcode-Org");
 		// 如果没有token，重定向到登录页

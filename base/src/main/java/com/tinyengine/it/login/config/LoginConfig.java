@@ -40,10 +40,13 @@ public class LoginConfig implements WebMvcConfigurer {
                 "/platform-center/api/user/login",
                 // 忘记密码
                 "/platform-center/api/user/forgot-password",
-                // AI
-                "/app-center/api/ai/chat",
-                "/app-center/api/chat/completions",
+                // Swagger/OpenAPI
+                "/swagger-ui.html",
+                "/swagger-ui/**",
+                "/api-docs",
+                "/api-docs/**",
                 // 图片文件资源下载
+                "/error",
                 "/material-center/api/resource/download/*"
             );
     }
