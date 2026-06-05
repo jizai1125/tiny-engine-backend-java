@@ -2,6 +2,8 @@ package com.tinyengine.it.service.app.impl.v1;
 
 import com.tinyengine.it.common.exception.ServiceException;
 import com.tinyengine.it.config.OpenAIConfig;
+import com.tinyengine.it.model.entity.Resource;
+import com.tinyengine.it.service.material.ResourceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,6 +18,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AiChatV1ServiceImplTest {
     private TestAiChatV1ServiceImpl service;
@@ -125,11 +129,37 @@ class AiChatV1ServiceImplTest {
             service.validateFinalUrl("https://[fc00::1]/v1/chat/completions"));
     }
 
+    @Test
+    void shouldConvertLocalResourceImageUrlToDataUrl() throws Exception {
+        ResourceService resourceService = mock(ResourceService.class);
+        Resource resource = new Resource();
+        resource.setResourceData("data:image/png;base64,abc123");
+        when(resourceService.queryResourceByName("image123.png")).thenReturn(resource);
+
+        TestAiChatV1ServiceImpl serviceWithResource = new TestAiChatV1ServiceImpl(config, resourceService);
+        Map<String, Object> imageUrl = new HashMap<>();
+        imageUrl.put("url", "http://localhost:9090/material-center/api/resource/download/image123.png");
+        Map<String, Object> imageContent = new HashMap<>();
+        imageContent.put("type", "image_url");
+        imageContent.put("image_url", imageUrl);
+        Map<String, Object> message = new HashMap<>();
+        message.put("role", "user");
+        message.put("content", List.of(imageContent));
+
+        serviceWithResource.resolveLocalResourceImageUrls(List.of(message));
+
+        assertEquals("data:image/png;base64,abc123", imageUrl.get("url"));
+    }
+
     private static final class TestAiChatV1ServiceImpl extends AiChatV1ServiceImpl {
         private final Map<String, InetAddress[]> resolvedHosts = new HashMap<>();
 
         private TestAiChatV1ServiceImpl(OpenAIConfig config) {
             super(config);
+        }
+
+        private TestAiChatV1ServiceImpl(OpenAIConfig config, ResourceService resourceService) {
+            super(config, null, null, resourceService);
         }
 
         private void stubHost(String host, String... addresses) throws UnknownHostException {

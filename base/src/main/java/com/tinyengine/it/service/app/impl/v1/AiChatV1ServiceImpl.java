@@ -21,8 +21,10 @@ import com.tinyengine.it.config.AiSecretConfig;
 import com.tinyengine.it.config.OpenAIConfig;
 import com.tinyengine.it.model.dto.ChatRequest;
 import com.tinyengine.it.model.dto.ResolvedAiService;
+import com.tinyengine.it.model.entity.Resource;
 import com.tinyengine.it.service.app.AiModelConfigService;
 import com.tinyengine.it.service.app.v1.AiChatV1Service;
+import com.tinyengine.it.service.material.ResourceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,7 @@ import java.net.InetAddress;
 import java.net.Inet6Address;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -61,16 +64,19 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
     private final HttpClient httpClient;
     private final AiModelConfigService aiModelConfigService;
     private final AiSecretConfig aiSecretConfig;
+    private final ResourceService resourceService;
 
     @Autowired
     public AiChatV1ServiceImpl(
         OpenAIConfig config,
         AiModelConfigService aiModelConfigService,
-        AiSecretConfig aiSecretConfig
+        AiSecretConfig aiSecretConfig,
+        ResourceService resourceService
     ) {
         this.config = config;
         this.aiModelConfigService = aiModelConfigService;
         this.aiSecretConfig = aiSecretConfig;
+        this.resourceService = resourceService;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(config.getTimeoutSeconds()))
                 .followRedirects(HttpClient.Redirect.NEVER)
@@ -78,7 +84,7 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
     }
 
     AiChatV1ServiceImpl(OpenAIConfig config) {
-        this(config, null, null);
+        this(config, null, null, null);
     }
 
     /**
@@ -101,6 +107,7 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
         request.setModel(resolvedAiService.getModelName());
         request.setBaseUrl(resolvedAiService.getBaseUrl());
         request.setApiKey(resolvedAiService.getApiKey());
+        request.setMessages(resolveLocalResourceImageUrls(request.getMessages()));
 
         String requestBody = buildRequestBody(request);
         String encryptApiKey = request.getApiKey();
@@ -226,6 +233,86 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
         }
 
         return JsonUtils.encode(body);
+    }
+
+    @SuppressWarnings("unchecked")
+    Object resolveLocalResourceImageUrls(Object value) throws Exception {
+        if (resourceService == null || value == null) {
+            return value;
+        }
+
+        if (value instanceof Map<?, ?> map) {
+            Object imageUrl = map.get("image_url");
+            if (imageUrl instanceof Map<?, ?> imageUrlMap) {
+                Object url = imageUrlMap.get("url");
+                if (url instanceof String urlString) {
+                    String dataUrl = resolveLocalResourceDataUrl(urlString);
+                    if (dataUrl != null) {
+                        ((Map<String, Object>) imageUrlMap).put("url", dataUrl);
+                    }
+                }
+            }
+
+            for (Object child : map.values()) {
+                resolveLocalResourceImageUrls(child);
+            }
+            return value;
+        }
+
+        if (value instanceof List<?> list) {
+            for (Object item : list) {
+                resolveLocalResourceImageUrls(item);
+            }
+        }
+
+        return value;
+    }
+
+    private String resolveLocalResourceDataUrl(String url) throws Exception {
+        String resourceName = getResourceNameFromDownloadUrl(url);
+        if (resourceName == null) {
+            return null;
+        }
+
+        Resource resource = resourceService.queryResourceByName(resourceName);
+        if (resource == null) {
+            throw new ServiceException("400", "Resource image not found: " + resourceName);
+        }
+
+        String imageData = resourceName.startsWith("thumbnail_")
+            ? resource.getThumbnailData()
+            : resource.getResourceData();
+        if (!StringUtils.hasText(imageData)) {
+            throw new ServiceException("400", "Resource image data is empty: " + resourceName);
+        }
+
+        return imageData;
+    }
+
+    private String getResourceNameFromDownloadUrl(String url) {
+        String path;
+        try {
+            URI uri = URI.create(url);
+            path = uri.getPath();
+            if (!StringUtils.hasText(path)) {
+                path = url;
+            }
+        } catch (IllegalArgumentException e) {
+            path = url;
+        }
+
+        String downloadPath = "/material-center/api/resource/download/";
+        int index = path.indexOf(downloadPath);
+        if (index < 0) {
+            return null;
+        }
+
+        String resourceName = path.substring(index + downloadPath.length());
+        if (!StringUtils.hasText(resourceName)) {
+            return null;
+        }
+
+        return URLDecoder.decode(resourceName, StandardCharsets.UTF_8);
     }
 
     private JsonNode processStandardResponse(HttpRequest.Builder requestBuilder) {

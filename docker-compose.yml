@@ -43,6 +43,7 @@ services:
       - CHROMA_BASE_URL=http://tiny-engine-rag:8000
       - MODEL_PATH=/app/all-MiniLM-L6-v2/model.onnx
       - TOKENIZER_PATH=/app/all-MiniLM-L6-v2/tokenizer.json
+      - TINY_ENGINE_URL=http://localhost:9090/material-center/api/resource/download
 
   tiny-engine:
     image: tiny-engine

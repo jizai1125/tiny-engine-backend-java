@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="TinyEngineApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="AI_SM4_KEY" value="" />
+      <env name="TINY_ENGINE_URL" value="http://localhost:9090/material-center/api/resource/download" />
+    </envs>
+    <module name="tiny-engine-app" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=dev" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.tinyengine.it.TinyEngineApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

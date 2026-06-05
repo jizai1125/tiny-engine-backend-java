@@ -205,7 +205,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         // 接入租户系统需添加租户id查询
         Resource resourceResult = this.baseMapper.selectOne(queryWrapper);
         if (resourceResult != null) {
-            throw new ServiceException(ExceptionEnum.CM003.getResultCode(), ExceptionEnum.CM003.getResultMsg());
+            return resourceResult;
         }
         int createResult = this.baseMapper.createResource(resource);
         if (createResult != 1) {
