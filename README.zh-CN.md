@@ -13,9 +13,48 @@
 
 * 点击 tiny-engine-backend-java 代码仓库右上角的 Fork 按钮，将上游仓库 Fork 到个人仓库
 * Clone 个人仓库到本地
-*  安装依赖JDK1.8,Maven 3.5以上即可
-* 在 tiny-engine-backend-java/app/src/main/resources/application-dev.yml文件里修改连接数据库相关配置
-* 在 tiny-engine-backend-java/app/src/main/java/com/tinyengine/it/TinyEngineApplication主函数入口启动项目进行本地开发
+* 安装依赖 JDK17、Maven 3.5 以上
+* 用 IDEA 按 Maven 项目方式打开仓库根目录，使用根 `pom.xml`
+* 在本地 MySQL 中创建 `tiny_engine_data_java`，然后按文件名顺序执行 `docker-deploy-data/mysql/init` 下的全部 SQL
+* 导入 MySQL 初始化脚本时请使用 UTF-8/utf8mb4 客户端字符集，避免中文初始化数据写坏
+* 在 `app/src/main/resources/application-dev.yml` 中修改数据库连接配置
+* 如果启用了 AI 服务密钥加密，启动前请在 IDEA 运行配置或部署环境中配置 `AI_SM4_KEY`，不要把真实密钥提交到仓库
+* 在 `app` 模块中启动 `com.tinyengine.it.TinyEngineApplication` 进行本地开发
+* 启动后访问 `http://localhost:9090/swagger-ui.html` 验证服务是否正常
+
+### 不会 Java / Maven 也能启动
+
+如果你是第一次接触 Java 项目，按下面做就行：
+
+1. 打开 IDEA。
+2. 不要点 `New Project`，直接点 `Open`。
+3. 选择仓库根目录 `tiny-engine-backend-java`。
+4. 如果 IDEA 弹窗提示 `Trust Project`、`Load Maven Project`、`Import Maven Project`，全部点同意。
+5. 打开后确认左侧能看到 `pom.xml`、`app`、`base`。这说明项目已经按 Maven 方式导入，不是普通 Java 项目。
+6. 打开 `File -> Project Structure -> Project`，把 `Project SDK` 设成 `JDK 17`。如果你没有单独安装 JDK，也可以直接选 IDEA 自带的 JBR。
+7. 等待 IDEA 自动下载依赖；如果右下角还在转圈，就先不要启动。
+8. 本地 MySQL 里创建数据库 `tiny_engine_data_java`。
+9. 按文件名顺序导入 `docker-deploy-data/mysql/init` 下的全部 SQL。
+10. 导入 MySQL 脚本时，请使用 `utf8mb4` 客户端字符集，否则中文初始化数据和表注释会乱码。
+11. 修改 `app/src/main/resources/application-dev.yml` 里的数据库账号、密码、端口。
+12. 如果启用了 AI 服务密钥加密，请在 IDEA Run Configuration 的环境变量里配置 `AI_SM4_KEY`；部署环境也要通过 Secret 或运行时环境变量注入同一个值，不要把真实密钥写进仓库。
+13. 打开 `app/src/main/java/com/tinyengine/it/TinyEngineApplication.java`。
+14. 点击 `main` 方法左边的绿色三角，选择运行。
+15. 如果 IDEA 没自动生成运行配置，也可以直接使用仓库里的共享运行配置 `.run/TinyEngineApplication.run.xml`。
+16. 启动成功后，访问 `http://localhost:9090/swagger-ui.html`。
+
+启动成功时，日志里通常会看到这些信息：
+
+* `The following 1 profile is active: "dev"`
+* `Started TinyEngineApplication`
+* `http-nio-9090`
+
+如果启动失败，优先检查：
+
+* `Project SDK` 是不是 `17`
+* Maven 依赖是不是还没下载完
+* `application-dev.yml` 的数据库配置是否与你本机一致
+* MySQL 初始化脚本是否按顺序完整导入
 
 详细请看[TinyEngine 官网-使用手册-平台开发指南-前后端代码本地启动联调](https://opentiny.design/tiny-engine#/help-center/course/dev/1200)章节
 
@@ -165,9 +204,14 @@
 
 #### 本地运行时配置：
 
-JDK1.8，
+JDK17，
 Maven 3.5以上即可，
 mysql 8
+
+MySQL 导入示例：
+```bash
+mysql --default-character-set=utf8mb4 -uroot -p tiny_engine_data_java < docker-deploy-data/mysql/init/01_create_all_tables_ddl_v1.0.0.mysql.sql
+```
 
 ### 数据迁移前后数据库表映射
 

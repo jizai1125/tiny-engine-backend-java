@@ -11,9 +11,39 @@ English | [简体中文](README.zh-CN.md)
 Local Boot Steps:
 * Click the Fork button in the upper right corner of the tiny-engine-backend-java repository to fork the upstream repository to your personal repository
 * Clone personal warehouse to local
-*  The installation depends on JDK 1.8 and Maven 3.5 or later
-* Modify the configuration of the connection database in the tiny-engine-backend-java/app/src/main/resources/application-dev.yml file
-* Start the project in tiny-engine-backend-java/app/src/main/java/com/tinyengine/it/TinyEngineApplication for local development
+* The installation depends on JDK 17 and Maven 3.5 or later
+* Open the repository root in IntelliJ IDEA as a Maven project and use the root `pom.xml`
+* Create the local MySQL database `tiny_engine_data_java`, then import all SQL files under `docker-deploy-data/mysql/init` in filename order
+* When importing MySQL initialization scripts, use UTF-8/utf8mb4 client encoding to avoid garbled Chinese seed data
+* Modify the database connection configuration in `app/src/main/resources/application-dev.yml`
+* If encrypted AI service API keys are enabled, configure `AI_SM4_KEY` in the IntelliJ run configuration or deployment environment before startup. Do not commit the real key to the repository.
+* Start `com.tinyengine.it.TinyEngineApplication` in the `app` module for local development
+* After startup, open `http://localhost:9090/swagger-ui.html` to verify the service
+
+### For IntelliJ Beginners
+
+If you are new to Java or Maven projects, use this flow:
+
+1. Open IntelliJ IDEA.
+2. Do not create a new Java project. Click `Open` and select the repository root `tiny-engine-backend-java`.
+3. When IDEA asks to trust or import the project, allow it and load it as a Maven project.
+4. Confirm the project view shows `pom.xml`, `app`, and `base`.
+5. Set `Project SDK` to `JDK 17` in `File -> Project Structure -> Project`. Using IDEA's bundled JBR is acceptable.
+6. Wait for Maven dependency import to finish.
+7. Create the local MySQL database `tiny_engine_data_java`.
+8. Import all SQL files under `docker-deploy-data/mysql/init` in filename order.
+9. Import MySQL initialization scripts with `utf8mb4` client encoding, otherwise Chinese seed data and comments will be garbled.
+10. Update database settings in `app/src/main/resources/application-dev.yml`.
+11. If encrypted AI service API keys are enabled, add `AI_SM4_KEY` to the IntelliJ run configuration environment variables. For deployment, inject the same key through your secret manager or runtime environment instead of committing it to the repository.
+12. Open `app/src/main/java/com/tinyengine/it/TinyEngineApplication.java`.
+13. Click the green run icon next to the `main` method, or use the shared run configuration `.run/TinyEngineApplication.run.xml`.
+14. After startup, open `http://localhost:9090/swagger-ui.html`.
+
+Typical successful startup log lines:
+
+* `The following 1 profile is active: "dev"`
+* `Started TinyEngineApplication`
+* `http-nio-9090`
 
 For details, please refer to [TinyEngine Official Website - User Manual - Platform Development Guide - Local Startup Joint Debugging of Front-end and Backend Codes](https://opentiny.design/tiny-engine#/help-center/course/dev/1200).
 
@@ -162,9 +192,14 @@ For more information about how to use the server, please refer to [TinyEngine Of
 
 #### Local Runtime Configuration:
 
-JDK1.8，
+JDK17，
 Maven 3.5 or later is sufficient，
 mysql 8
+
+Example MySQL import command:
+```bash
+mysql --default-character-set=utf8mb4 -uroot -p tiny_engine_data_java < docker-deploy-data/mysql/init/01_create_all_tables_ddl_v1.0.0.mysql.sql
+```
 
 ### Database table mapping before and after data migration
 

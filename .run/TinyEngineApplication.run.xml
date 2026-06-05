@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="TinyEngineApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <envs>
-      <env name="AI_SM4_KEY" value="" />
+      <env name="AI_SM4_KEY" value="k1HFSiaUIAuLn6Acmy0zpg==" />
       <env name="TINY_ENGINE_URL" value="http://localhost:9090/material-center/api/resource/download" />
     </envs>
     <module name="tiny-engine-app" />
