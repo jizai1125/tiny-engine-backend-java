@@ -61,6 +61,8 @@ ai:
     - api.moonshot.cn
     - api.01.ai
     - api.minimax.chat
+    - api.minimaxi.com
+    - api.minimax.io
     - spark-api.cn-huabei-1.xf-yun.com
     - api.sensenova.cn
     - api.baichuan-ai.com

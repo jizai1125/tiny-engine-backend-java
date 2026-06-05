@@ -22,6 +22,7 @@ import lombok.Data;
  */
 @Data
 public class ChatRequest {
+    private String serviceKey;
     private String model;
     private String apiKey;
     private String baseUrl;

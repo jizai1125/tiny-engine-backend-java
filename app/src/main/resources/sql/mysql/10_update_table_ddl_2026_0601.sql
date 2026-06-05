@@ -1,0 +1,50 @@
+CREATE TABLE IF NOT EXISTS `t_ai_model_service`
+(
+    `id`                    int           NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `platform_id`           int           NOT NULL COMMENT '平台id',
+    `scope_type`            varchar(20)   NOT NULL COMMENT '作用域：PLATFORM/USER',
+    `owner_user_id`         varchar(60)   NOT NULL DEFAULT '' COMMENT '归属用户id，平台内置服务为空字符串',
+    `service_key`           varchar(120)  NOT NULL COMMENT '服务稳定标识',
+    `provider`              varchar(120)  NOT NULL COMMENT '提供商标识',
+    `label`                 varchar(255)  NOT NULL COMMENT '服务展示名称',
+    `base_url`              varchar(1024) NOT NULL COMMENT '模型服务地址',
+    `api_key`               longtext COMMENT '加密后的服务密钥',
+    `allow_empty_api_key`   tinyint(1)    NOT NULL DEFAULT 0 COMMENT '是否允许空key',
+    `models_json`           longtext      NOT NULL COMMENT '模型配置',
+    `is_built_in`           tinyint(1)    NOT NULL DEFAULT 0 COMMENT '是否内置服务',
+    `editable`              tinyint(1)    NOT NULL DEFAULT 1 COMMENT '是否允许前端编辑',
+    `enabled`               tinyint(1)    NOT NULL DEFAULT 1 COMMENT '是否启用',
+    `deprecated`            tinyint(1)    NOT NULL DEFAULT 0 COMMENT '是否废弃',
+    `seed_spec_hash`        varchar(128) COMMENT '内置服务种子定义指纹',
+    `seed_version`          varchar(64) COMMENT '内置服务种子版本',
+    `sort`                  int           NOT NULL DEFAULT 0 COMMENT '排序值',
+    `tenant_id`             varchar(60) COMMENT '租户id',
+    `renter_id`             varchar(60) COMMENT '业务租户id',
+    `site_id`               varchar(60) COMMENT '站点id',
+    `created_by`            varchar(60)   NOT NULL COMMENT '创建人',
+    `last_updated_by`       varchar(60)   NOT NULL COMMENT '最后修改人',
+    `created_time`          timestamp     NOT NULL DEFAULT current_timestamp COMMENT '创建时间',
+    `last_updated_time`     timestamp     NOT NULL DEFAULT current_timestamp COMMENT '更新时间',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `u_idx_ai_model_service` (`tenant_id`, `platform_id`, `scope_type`, `owner_user_id`, `service_key`) USING BTREE
+) ENGINE = InnoDB COMMENT = 'AI 模型服务配置表';
+
+CREATE TABLE IF NOT EXISTS `t_ai_user_setting`
+(
+    `id`                    int          NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `platform_id`           int          NOT NULL COMMENT '平台id',
+    `user_id`               varchar(60)  NOT NULL COMMENT '用户id',
+    `default_service_key`   varchar(120) COMMENT '默认模型服务标识',
+    `default_model_name`    varchar(255) COMMENT '默认模型名称',
+    `quick_service_key`     varchar(120) COMMENT '快速模型服务标识',
+    `quick_model_name`      varchar(255) COMMENT '快速模型名称',
+    `tenant_id`             varchar(60) COMMENT '租户id',
+    `renter_id`             varchar(60) COMMENT '业务租户id',
+    `site_id`               varchar(60) COMMENT '站点id',
+    `created_by`            varchar(60)  NOT NULL COMMENT '创建人',
+    `last_updated_by`       varchar(60)  NOT NULL COMMENT '最后修改人',
+    `created_time`          timestamp    NOT NULL DEFAULT current_timestamp COMMENT '创建时间',
+    `last_updated_time`     timestamp    NOT NULL DEFAULT current_timestamp COMMENT '更新时间',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `u_idx_ai_user_setting` (`tenant_id`, `platform_id`, `user_id`) USING BTREE
+) ENGINE = InnoDB COMMENT = '用户 AI 模型设置表';

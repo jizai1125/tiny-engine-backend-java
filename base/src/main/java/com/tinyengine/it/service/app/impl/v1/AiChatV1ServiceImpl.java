@@ -17,11 +17,16 @@ import com.tinyengine.it.common.exception.ServiceException;
 import com.tinyengine.it.common.log.SystemServiceLog;
 import com.tinyengine.it.common.utils.JsonUtils;
 import com.tinyengine.it.common.utils.SM4Utils;
+import com.tinyengine.it.config.AiSecretConfig;
 import com.tinyengine.it.config.OpenAIConfig;
 import com.tinyengine.it.model.dto.ChatRequest;
+import com.tinyengine.it.model.dto.ResolvedAiService;
+import com.tinyengine.it.service.app.AiModelConfigService;
 import com.tinyengine.it.service.app.v1.AiChatV1Service;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
@@ -54,13 +59,26 @@ import java.util.Set;
 public class AiChatV1ServiceImpl implements AiChatV1Service {
     private final OpenAIConfig config;
     private final HttpClient httpClient;
+    private final AiModelConfigService aiModelConfigService;
+    private final AiSecretConfig aiSecretConfig;
 
-    public AiChatV1ServiceImpl(OpenAIConfig config) {
+    @Autowired
+    public AiChatV1ServiceImpl(
+        OpenAIConfig config,
+        AiModelConfigService aiModelConfigService,
+        AiSecretConfig aiSecretConfig
+    ) {
         this.config = config;
+        this.aiModelConfigService = aiModelConfigService;
+        this.aiSecretConfig = aiSecretConfig;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(config.getTimeoutSeconds()))
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
+    }
+
+    AiChatV1ServiceImpl(OpenAIConfig config) {
+        this(config, null, null);
     }
 
     /**
@@ -72,9 +90,21 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
     @Override
     @SystemServiceLog(description = "chatCompletion")
     public Object chatCompletion(ChatRequest request) throws Exception {
+        ResolvedAiService resolvedAiService = aiModelConfigService.resolveChatService(
+            request.getServiceKey(),
+            request.getModel()
+        );
+        if (resolvedAiService == null) {
+            throw new ServiceException("400", "AI serviceKey is required");
+        }
+
+        request.setModel(resolvedAiService.getModelName());
+        request.setBaseUrl(resolvedAiService.getBaseUrl());
+        request.setApiKey(resolvedAiService.getApiKey());
+
         String requestBody = buildRequestBody(request);
-        String encryptApiKey = request.getApiKey() != null ? request.getApiKey() : config.getApiKey();
-        String apiKey = getApiKey(encryptApiKey);
+        String encryptApiKey = request.getApiKey();
+        String apiKey = StringUtils.hasText(encryptApiKey) ? getApiKey(encryptApiKey) : "";
         String baseUrl = request.getBaseUrl();
 
         // 规范化URL处理
@@ -86,8 +116,10 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
             .uri(URI.create(normalizedUrl))
             .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + apiKey)
             .POST(HttpRequest.BodyPublishers.ofString(requestBody));
+        if (StringUtils.hasText(apiKey)) {
+            requestBuilder.header("Authorization", "Bearer " + apiKey);
+        }
         if (request.isStream()) {
             requestBuilder.header("Accept", "text/event-stream");
             return processStreamResponse(requestBuilder);
@@ -104,7 +136,7 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
      */
     @Override
     public String getToken(String apiKey) throws Exception {
-        String sm4Key = System.getenv("SM4KEY");
+        String sm4Key = aiSecretConfig.getRequiredSm4Key();
         String encrypt = SM4Utils.encryptECB(apiKey, sm4Key);
         return "EKEY_"+ encrypt;
     }
@@ -156,8 +188,8 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
         if (request.getTemperature() != null) {
             body.put("temperature", request.getTemperature());
         }
-        if (request.getSearchOptions() != null) {
-            body.put("stream_options", request.getSearchOptions());
+        if (request.getStreamOptions() != null) {
+            body.put("stream_options", request.getStreamOptions());
         }
         if (request.getPresencePenalty() != null) {
             body.put("presence_penalty", request.getPresencePenalty());
@@ -168,11 +200,14 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
         if (request.getMaxInputTokens() != null) {
             body.put("max_input_tokens", request.getMaxInputTokens());
         }
-        if (request.getMaxInputTokens() != null) {
+        if (request.getVlHighResolutionImages() != null) {
             body.put("vl_high_resolution_images", request.getVlHighResolutionImages());
         }
         if (request.getEnableThinking() != null) {
             body.put("enable_thinking", request.getEnableThinking());
+        }
+        if (request.getThinkingBudget() != null) {
+            body.put("thinking_budget", request.getThinkingBudget());
         }
         if (request.getToolChoice() != null) {
             body.put("tool_choice", request.getToolChoice());
@@ -381,10 +416,14 @@ public class AiChatV1ServiceImpl implements AiChatV1Service {
     }
 
     private String getApiKey(String encryptApiKey) throws Exception {
-        String sm4Key = System.getenv("SM4KEY");
+        if (!encryptApiKey.startsWith("EKEY_")) {
+            return encryptApiKey;
+        }
+
+        String sm4Key = aiSecretConfig.getRequiredSm4Key();
 
         if (encryptApiKey.startsWith("EKEY_")) {
-            String  encryptBase64ApiKey = encryptApiKey.substring(5);
+            String encryptBase64ApiKey = encryptApiKey.substring(5);
             return SM4Utils.decryptECB(encryptBase64ApiKey, sm4Key);
         }
         return encryptApiKey;

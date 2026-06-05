@@ -1,0 +1,235 @@
+[
+  {
+    "service_key": "bailian",
+    "provider": "bailian",
+    "label": "阿里云百炼",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "allow_empty_api_key": false,
+    "sort": 10,
+    "seed_version": "2026-06-01",
+    "models": [
+      {
+        "name": "qwen-plus",
+        "label": "Qwen 通用模型（Plus）",
+        "capabilities": {
+          "toolCalling": true,
+          "reasoning": {
+            "extraBody": {
+              "enable": {
+                "enable_thinking": true,
+                "thinking_budget": 1000
+              },
+              "disable": null
+            }
+          },
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                },
+                "enable_thinking": false
+              },
+              "disable": null
+            }
+          }
+        }
+      },
+      {
+        "name": "qwen3-vl-plus",
+        "label": "Qwen VL视觉理解模型（PLUS）",
+        "capabilities": {
+          "vision": true,
+          "reasoning": {
+            "extraBody": {
+              "enable": {
+                "enable_thinking": true,
+                "thinking_budget": 1000
+              },
+              "disable": null
+            }
+          },
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                },
+                "enable_thinking": false
+              },
+              "disable": null
+            }
+          }
+        }
+      },
+      {
+        "name": "qwen3-coder-plus",
+        "label": "Qwen Coder编程模型（PLUS）",
+        "capabilities": {
+          "toolCalling": true,
+          "reasoning": {
+            "extraBody": {
+              "enable": {
+                "enable_thinking": true,
+                "thinking_budget": 1000
+              },
+              "disable": null
+            }
+          },
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                },
+                "enable_thinking": false
+              },
+              "disable": null
+            }
+          }
+        }
+      },
+      {
+        "name": "deepseek-v3.2-exp",
+        "label": "DeepSeek（V3.2）",
+        "capabilities": {
+          "toolCalling": true,
+          "reasoning": {
+            "extraBody": {
+              "enable": {
+                "enable_thinking": true,
+                "thinking_budget": 1000
+              },
+              "disable": null
+            }
+          },
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                },
+                "enable_thinking": false
+              },
+              "disable": null
+            }
+          }
+        }
+      },
+      {
+        "name": "qwen-flash",
+        "label": "Qwen 通用模型（Flash）",
+        "capabilities": {
+          "toolCalling": true,
+          "compact": true,
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                },
+                "enable_thinking": false
+              },
+              "disable": null
+            }
+          }
+        }
+      },
+      {
+        "name": "qwen3-coder-flash",
+        "label": "Qwen Coder编程模型（Flash）",
+        "capabilities": {
+          "toolCalling": true,
+          "compact": true,
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                },
+                "enable_thinking": false
+              },
+              "disable": null
+            }
+          }
+        }
+      },
+      {
+        "name": "qwen3-14b",
+        "label": "Qwen3（14b）",
+        "capabilities": {
+          "toolCalling": true,
+          "compact": true,
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                },
+                "enable_thinking": false
+              },
+              "disable": null
+            }
+          }
+        }
+      },
+      {
+        "name": "qwen3-8b",
+        "label": "Qwen3（8b）",
+        "capabilities": {
+          "toolCalling": true,
+          "compact": true,
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                },
+                "enable_thinking": false
+              },
+              "disable": null
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "service_key": "deepseek",
+    "provider": "deepseek",
+    "label": "DeepSeek",
+    "base_url": "https://api.deepseek.com/v1",
+    "allow_empty_api_key": false,
+    "sort": 20,
+    "seed_version": "2026-06-01",
+    "models": [
+      {
+        "name": "deepseek-chat",
+        "label": "DeepSeek",
+        "capabilities": {
+          "toolCalling": true,
+          "reasoning": {
+            "extraBody": {
+              "enable": {
+                "model": "deepseek-reasoner"
+              },
+              "disable": {
+                "model": "deepseek-chat"
+              }
+            }
+          },
+          "jsonOutput": {
+            "extraBody": {
+              "enable": {
+                "response_format": {
+                  "type": "json_object"
+                }
+              },
+              "disable": null
+            }
+          }
+        }
+      }
+    ]
+  }
+]
